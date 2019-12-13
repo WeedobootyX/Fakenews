@@ -46,7 +46,7 @@ public class NewsService {
 	@Value("${twitter.oauth.consumer.secret}")
 	String TWITTER_OAUTH_CONSUMER_SECRET;
 	
-	/*HERE IS THE dev HOTFIX*/
+	/*HERE IS THE third dev HOTFIX*/
 	public SnippetList getSnippetList(String snippetKey) throws DatabaseErrorException, SnippetsNotFoundException {
 		logger.debug("getSnippetList for key: " + snippetKey);
 		return newsDAO.getSnippetList(snippetKey);
