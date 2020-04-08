@@ -1,5 +1,8 @@
 package se.bubbelbubbel.fakenews.controller;
 
+import java.io.IOException;
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.exception.SnippetsNotFoundException;
 import se.bubbelbubbel.fakenews.exception.StructureNotFoundException;
+import se.bubbelbubbel.fakenews.model.Newsflash;
 import se.bubbelbubbel.fakenews.model.SnippetList;
 import se.bubbelbubbel.fakenews.model.star.PrinterPostRequest;
 import se.bubbelbubbel.fakenews.service.NewsService;
@@ -59,6 +63,20 @@ public class NewsController {
 		return newsService.analysis();
 	}
 
+	@RequestMapping(value="/upcoming", method=RequestMethod.GET,
+			headers={"Accept=application/json"})
+	public List<Newsflash> upcoming() throws DatabaseErrorException {
+		return newsService.getUpcoming();
+	}
+
+	@RequestMapping(value="/newsflash/add", method=RequestMethod.POST,
+			headers={"Accept=application/json"})
+	@ResponseStatus(HttpStatus.CREATED)
+	public @ResponseBody String addNewsflash(@RequestBody String newsflashJson) throws IOException, DatabaseErrorException {  
+		logger.debug("Adding newsflash. newsflashJson: " + newsflashJson);
+		return newsService.addNewsflash(newsflashJson);
+	}
+	
 //	@RequestMapping(value="/cloudprint", method=RequestMethod.GET,
 //			headers={"Accept=application/json"})
 //	@ResponseStatus(HttpStatus.OK)

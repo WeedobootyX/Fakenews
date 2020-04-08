@@ -1,5 +1,6 @@
 package se.bubbelbubbel.fakenews.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -13,11 +14,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import se.bubbelbubbel.fakenews.dao.NewsDAO;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.exception.SnippetsNotFoundException;
 import se.bubbelbubbel.fakenews.exception.StructureNotFoundException;
 import se.bubbelbubbel.fakenews.model.Newsflash;
+import se.bubbelbubbel.fakenews.model.QueuedNewsflash;
 import se.bubbelbubbel.fakenews.model.Snippet;
 import se.bubbelbubbel.fakenews.model.SnippetList;
 import se.bubbelbubbel.fakenews.model.Structure;
@@ -199,4 +203,33 @@ public class NewsService {
 		sb.append("Combinations; " + comboCounter + "\n");
 		return sb.toString();
 	}
+
+	public List<Newsflash> getUpcoming() throws DatabaseErrorException {
+		return newsDAO.getUnpublishedNewsflashes();
+	}
+
+	public String addNewsflash(String queuedNewsflashJson) throws IOException, DatabaseErrorException {
+		ObjectMapper jsonMapper = new ObjectMapper();
+		QueuedNewsflash queuedNewsflash;
+		try {
+			queuedNewsflash = jsonMapper.readValue(queuedNewsflashJson, QueuedNewsflash.class);
+			logger.debug("queuedNewsflash is: " + queuedNewsflash.toString());
+			Newsflash newsflash = new Newsflash();
+			newsflash.setNewsText(queuedNewsflash.getNewsText());
+			newsflash.setStatus(Newsflash.STATUS_PENDING);
+			GregorianCalendar nfDate = new GregorianCalendar();
+			nfDate.add(GregorianCalendar.MINUTE, queuedNewsflash.getSendMinutes());
+			newsflash.setSendTime(nfDate);
+			newsDAO.saveNewsflash(newsflash);
+			return "OK";
+		} 
+		catch (IOException e) {
+			logger.error("IOException caught in addNewsflash: " + e.getMessage());
+			throw e;
+		} catch (DatabaseErrorException e) {
+			logger.error("DatabaseErrorException caught in addNewsflash: " + e.getMessage());
+			throw e;
+		}
+	}
+	
 }
