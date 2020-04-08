@@ -97,14 +97,19 @@ public class NewsService {
 
 	}
 	private void tweetNewsflash(Newsflash newNewsflash) {
+		logger.debug("tweetNewsflash");
 		AccessToken accessToken = new AccessToken(TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET);
 		Twitter twitter = new TwitterFactory().getInstance();
 		twitter.setOAuthConsumer(TWITTER_OAUTH_CONSUMER_KEY, TWITTER_OAUTH_CONSUMER_SECRET);
 		twitter.setOAuthAccessToken(accessToken);
 		try {
 			Status status = twitter.updateStatus(newNewsflash.getNewsText());
-		} catch (TwitterException e) {
+		} 
+		catch (TwitterException e) {
 			logger.error("TwitterException caught: " + e.getMessage());
+		}
+		catch (Exception e) {
+			logger.error("Exception caught: " + e.getClass() + " - " + e.getMessage());
 		}
 	}
 
@@ -113,6 +118,7 @@ public class NewsService {
 		try {
 			logger.debug("publishNews");
 			if(getPendingNewsflashCount() == 0) {
+				logger.debug("no pending newsflashes. Creating new");
 				createNewNewsflash();
 			}
 			List<Newsflash> newsflashes = newsDAO.getUnpublishedNewsflashes();

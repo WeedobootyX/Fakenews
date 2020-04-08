@@ -309,4 +309,25 @@ public class NewsDAO {
 			throw new DatabaseErrorException(errorMsg);
 		}
 	}
+
+	public List<Newsflash> getUpcomingNewsflashes() throws DatabaseErrorException {
+		String SELECT_UPCOMING_NEWSFLASHES =
+				"SELECT " + NewsflashRowMapper.NEWSFLASH_COLUMN_LIST +
+				"FROM " + DATABASE_NAME + ".newsflashes " +
+				"WHERE status = ? " +
+				"ORDER BY send_time ";
+		try {
+			List<Newsflash> newsflashes = jdbcTemplate.query(SELECT_UPCOMING_NEWSFLASHES,
+															 new Object[] {Newsflash.STATUS_PENDING},
+															 new NewsflashRowMapper());
+			return newsflashes;
+		}
+		catch (Exception e) {
+			String errorMsg = " Exception caught in getUpcomingNewsflashes: " + e.getClass() + " with message: " + e.getMessage();
+			logger.error(errorMsg);
+			throw new DatabaseErrorException(errorMsg);
+		}
+		
+	}
+
 }
