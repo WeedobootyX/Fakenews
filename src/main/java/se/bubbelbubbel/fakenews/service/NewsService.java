@@ -205,7 +205,7 @@ public class NewsService {
 	}
 
 	public List<Newsflash> getUpcoming() throws DatabaseErrorException {
-		return newsDAO.getUnpublishedNewsflashes();
+		return newsDAO.getUpcomingNewsflashes();
 	}
 
 	public String addNewsflash(String queuedNewsflashJson) throws IOException, DatabaseErrorException {
