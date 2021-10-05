@@ -1,5 +1,6 @@
 package se.bubbelbubbel.fakenews.dao;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
@@ -166,8 +168,6 @@ public class NewsDAO {
 			logger.error(errorMsg);
 			throw new DatabaseErrorException(errorMsg);
 		}
-
-		
 	}
 
 	public Structure getStructure(String structureKey) throws StructureNotFoundException, DatabaseErrorException {
@@ -330,4 +330,60 @@ public class NewsDAO {
 		
 	}
 
+	public void saveManualNewsflash(Newsflash newsflash) throws DatabaseErrorException {
+		logger.debug("saveManualNewsflash" );
+		String INSERT_MANUAL_NEWSFLASH = 
+				"INSERT INTO " + DATABASE_NAME + ".manual_newsflashes " +
+				"(send_time, news_text, locked_until) " +
+				"VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 90 DAY)) ";
+
+		try {
+			jdbcTemplate.update(INSERT_MANUAL_NEWSFLASH,
+					new Object[] {newsflash.getSendTime().getTime(),
+								  newsflash.getNewsText()});
+		}
+		catch (Exception e) {
+			String errorMsg = " Exception caught in saveManualNewsflash for news text: " + newsflash.getNewsText() + " - " + e.getClass() + " with message: " + e.getMessage();
+			logger.error(errorMsg);
+			throw new DatabaseErrorException(errorMsg);
+		}
+	}
+
+	public List<Newsflash> getRecycledNewsflashes() throws DatabaseErrorException {
+		String SELECT_RECYCLED_NEWSFLASHES =
+				"SELECT id, news_text " +
+				"FROM " + DATABASE_NAME + ".manual_newsflashes " +
+				"WHERE locked_until < NOW() ";
+		try {
+			SqlRowSet rowSet = jdbcTemplate.queryForRowSet(SELECT_RECYCLED_NEWSFLASHES);
+			List<Newsflash> newsflashes = new ArrayList<Newsflash>();
+			while(rowSet.next()) {
+				Newsflash newsflash = new Newsflash(rowSet.getInt(1), rowSet.getString(2));
+				newsflashes.add(newsflash);
+			}
+			return newsflashes;
+		}
+		catch (Exception e) {
+			String errorMsg = " Exception caught in getUpcomingNewsflashes: " + e.getClass() + " with message: " + e.getMessage();
+			logger.error(errorMsg);
+			throw new DatabaseErrorException(errorMsg);
+		}
+	}
+	
+	public void lockManualNewsflash(int id) throws DatabaseErrorException {
+		logger.debug("locking manual newsflash: " + id);
+		String UPDATE_MANUAL_NEWSFLASH =
+			"UPDATE " + DATABASE_NAME + ".manual_newsflashes " +
+			"SET locked_until = ADD_DATE(NOW(), INTERVAL 90 DAY) " +
+			"WHERE id = ? ";
+		
+		try {
+			jdbcTemplate.update(UPDATE_MANUAL_NEWSFLASH,
+								new Object[] {id});
+		} catch (Exception e) {
+			String errorMsg = " Exception caught in lockManualNewsflash for id: " + id + " - " + e.getClass() + " with message: " + e.getMessage();
+			logger.error(errorMsg);
+			throw new DatabaseErrorException(errorMsg);
+		}
+	}
 }

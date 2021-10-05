@@ -8,6 +8,15 @@ public class Newsflash {
 	private String newsText = "";
 	private String  status = "";
 	private String structureKey = "";
+	
+	public Newsflash() {
+		super();
+	}
+	public Newsflash(int newsflashId, String newsText) {
+		super();
+		this.newsflashId = newsflashId;
+		this.newsText = newsText;
+	}
 	public String getStructureKey() {
 		return structureKey;
 	}

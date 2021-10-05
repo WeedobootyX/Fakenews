@@ -85,17 +85,25 @@ public class NewsService {
 
 	private void createNewNewsflash() throws DatabaseErrorException, StructureNotFoundException, SnippetsNotFoundException {
 		logger.debug("createNewNewsflash");
+		Random random = new Random();
+		List<Newsflash> recycledNewsflashes = newsDAO.getRecycledNewsflashes();
 		Newsflash newNewsflash =  new Newsflash();
-		newNewsflash.setNewsText(getNewsMessage());
+		if(recycledNewsflashes.size() > 10 && random.nextInt(100) > 20) { // 20% recycled if there are any
+			Newsflash recycledNewsflash = recycledNewsflashes.get(random.nextInt(recycledNewsflashes.size()));
+			newNewsflash.setNewsText(recycledNewsflash.getNewsText());
+			newsDAO.lockManualNewsflash(recycledNewsflash.getNewsflashId());
+		}
+		else {
+			newNewsflash.setNewsText(getNewsMessage());
+		}
 		newNewsflash.setStatus(Newsflash.STATUS_PENDING);
 		GregorianCalendar sendTime = new GregorianCalendar();
-		Random random = new Random();
 		int minuteInterval = 30 + random.nextInt(60);
 		sendTime.add(GregorianCalendar.MINUTE, minuteInterval);
 		newNewsflash.setSendTime(sendTime);
 		newsDAO.saveNewsflash(newNewsflash);
-
 	}
+	
 	private void tweetNewsflash(Newsflash newNewsflash) {
 		logger.debug("tweetNewsflash");
 		AccessToken accessToken = new AccessToken(TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET);
@@ -227,7 +235,10 @@ public class NewsService {
 			nfDate.add(GregorianCalendar.MINUTE, queuedNewsflash.getSendMinutes());
 			newsflash.setSendTime(nfDate);
 			newsDAO.saveNewsflash(newsflash);
-			return "OK";
+			if(queuedNewsflash.isRecycle()) {
+				newsDAO.saveManualNewsflash(newsflash);
+			}
+			return "Newsflash saved";
 		} 
 		catch (IOException e) {
 			logger.error("IOException caught in addNewsflash: " + e.getMessage());
