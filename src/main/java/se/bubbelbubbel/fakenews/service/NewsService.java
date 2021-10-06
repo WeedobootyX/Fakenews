@@ -18,8 +18,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import se.bubbelbubbel.fakenews.dao.NewsDAO;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
+import se.bubbelbubbel.fakenews.exception.IllegalNewsflashException;
 import se.bubbelbubbel.fakenews.exception.SnippetsNotFoundException;
 import se.bubbelbubbel.fakenews.exception.StructureNotFoundException;
+import se.bubbelbubbel.fakenews.exception.SystemParameterNotFoundException;
 import se.bubbelbubbel.fakenews.model.Newsflash;
 import se.bubbelbubbel.fakenews.model.QueuedNewsflash;
 import se.bubbelbubbel.fakenews.model.Snippet;
@@ -37,18 +39,8 @@ public class NewsService {
 	Logger logger = LoggerFactory.getLogger(NewsService.class);
 
 	@Autowired NewsDAO  newsDAO;
-	
-	@Value("${twitter.access.token}")
-	String TWITTER_ACCESS_TOKEN;
-
-	@Value("${twitter.access.token.secret}")
-	String TWITTER_ACCESS_TOKEN_SECRET;
-	
-	@Value("${twitter.oauth.consumer.key}")
-	String TWITTER_OAUTH_CONSUMER_KEY;
-	
-	@Value("${twitter.oauth.consumer.secret}")
-	String TWITTER_OAUTH_CONSUMER_SECRET;
+		
+	@Autowired SystemService systemService;
 	
 	/*HERE IS THE fourth dev HOTFIX*/
 	public SnippetList getSnippetList(String snippetKey) throws DatabaseErrorException, SnippetsNotFoundException {
@@ -104,11 +96,19 @@ public class NewsService {
 		newsDAO.saveNewsflash(newNewsflash);
 	}
 	
-	private void tweetNewsflash(Newsflash newNewsflash) {
+	private void tweetNewsflash(Newsflash newNewsflash) throws DatabaseErrorException, SystemParameterNotFoundException {
 		logger.debug("tweetNewsflash");
-		AccessToken accessToken = new AccessToken(TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET);
+		String twitterAccessToken = systemService.getSystemParameter("TWITTER_ACCESS_TOKEN");
+
+		String twitterAccessTokenSecret = systemService.getSystemParameter("TWITTER_ACCESS_TOKEN_SECRET");
+		
+		String twitterOauthConsumerKey = systemService.getSystemParameter("TWITTER_OAUTH_CONSUMER_KEY");
+		
+		String twitterOauthConsumerSecret = systemService.getSystemParameter("TWITTER_OAUTH_CONSUMER_SECRET");
+
+		AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
 		Twitter twitter = new TwitterFactory().getInstance();
-		twitter.setOAuthConsumer(TWITTER_OAUTH_CONSUMER_KEY, TWITTER_OAUTH_CONSUMER_SECRET);
+		twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
 		twitter.setOAuthAccessToken(accessToken);
 		try {
 			Status status = twitter.updateStatus(newNewsflash.getNewsText());
@@ -137,6 +137,8 @@ public class NewsService {
 				newsDAO.saveNewsflash(nextNewsflash);
 			}
 		} catch (DatabaseErrorException | StructureNotFoundException | SnippetsNotFoundException e) {
+			logger.error("Error in publishNews: " + e.getMessage());
+		} catch (SystemParameterNotFoundException e) {
 			logger.error("Error in publishNews: " + e.getMessage());
 		}
 	}
@@ -222,11 +224,14 @@ public class NewsService {
 		return newsDAO.getUpcomingNewsflashes();
 	}
 
-	public String addNewsflash(String queuedNewsflashJson) throws IOException, DatabaseErrorException {
+	public String addNewsflash(String queuedNewsflashJson) throws IOException, DatabaseErrorException, IllegalNewsflashException {
 		ObjectMapper jsonMapper = new ObjectMapper();
 		QueuedNewsflash queuedNewsflash;
 		try {
 			queuedNewsflash = jsonMapper.readValue(queuedNewsflashJson, QueuedNewsflash.class);
+			if(queuedNewsflash.getNewsText().isEmpty() || queuedNewsflash.getSendMinutes() == 0) {
+				throw new IllegalNewsflashException("Illegal newsflash rejected");
+			}
 			logger.debug("queuedNewsflash is: " + queuedNewsflash.toString());
 			Newsflash newsflash = new Newsflash();
 			newsflash.setNewsText(queuedNewsflash.getNewsText());
