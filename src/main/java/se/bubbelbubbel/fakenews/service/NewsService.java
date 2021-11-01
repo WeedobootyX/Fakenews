@@ -9,7 +9,6 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -41,6 +40,8 @@ public class NewsService {
 	@Autowired NewsDAO  newsDAO;
 		
 	@Autowired SystemService systemService;
+
+	@Autowired TweetService tweetService;
 	
 	/*HERE IS THE fourth dev HOTFIX*/
 	public SnippetList getSnippetList(String snippetKey) throws DatabaseErrorException, SnippetsNotFoundException {
@@ -96,31 +97,31 @@ public class NewsService {
 		newsDAO.saveNewsflash(newNewsflash);
 	}
 	
-	private void tweetNewsflash(Newsflash newNewsflash) throws DatabaseErrorException, SystemParameterNotFoundException {
-		logger.debug("tweetNewsflash");
-		String twitterAccessToken = systemService.getSystemParameter("TWITTER_ACCESS_TOKEN");
-
-		String twitterAccessTokenSecret = systemService.getSystemParameter("TWITTER_ACCESS_TOKEN_SECRET");
-		
-		String twitterOauthConsumerKey = systemService.getSystemParameter("TWITTER_OAUTH_CONSUMER_KEY");
-		
-		String twitterOauthConsumerSecret = systemService.getSystemParameter("TWITTER_OAUTH_CONSUMER_SECRET");
-
-		AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
-		Twitter twitter = new TwitterFactory().getInstance();
-		twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
-		twitter.setOAuthAccessToken(accessToken);
-		try {
-			Status status = twitter.updateStatus(newNewsflash.getNewsText());
-		} 
-		catch (TwitterException e) {
-			logger.error("TwitterException caught: " + e.getMessage());
-		}
-		catch (Exception e) {
-			logger.error("Exception caught: " + e.getClass() + " - " + e.getMessage());
-		}
-	}
-
+//	private void tweetNewsflash(Newsflash newNewsflash) throws DatabaseErrorException, SystemParameterNotFoundException {
+//		logger.debug("tweetNewsflash");
+//		String twitterAccessToken = systemService.getSystemParameter("TWITTER_ACCESS_TOKEN");
+//
+//		String twitterAccessTokenSecret = systemService.getSystemParameter("TWITTER_ACCESS_TOKEN_SECRET");
+//		
+//		String twitterOauthConsumerKey = systemService.getSystemParameter("TWITTER_OAUTH_CONSUMER_KEY");
+//		
+//		String twitterOauthConsumerSecret = systemService.getSystemParameter("TWITTER_OAUTH_CONSUMER_SECRET");
+//
+//		AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
+//		Twitter twitter = new TwitterFactory().getInstance();
+//		twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
+//		twitter.setOAuthAccessToken(accessToken);
+//		try {
+//			Status status = twitter.updateStatus(newNewsflash.getNewsText());
+//		} 
+//		catch (TwitterException e) {
+//			logger.error("TwitterException caught: " + e.getMessage());
+//		}
+//		catch (Exception e) {
+//			logger.error("Exception caught: " + e.getClass() + " - " + e.getMessage());
+//		}
+//	}
+//
 	@Scheduled(fixedRate=60000)
 	public void publishNews() {
 		try {
@@ -132,7 +133,7 @@ public class NewsService {
 			List<Newsflash> newsflashes = newsDAO.getUnpublishedNewsflashes();
 			if(newsflashes.size() > 0) {
 				Newsflash nextNewsflash = newsflashes.get(0);
-				tweetNewsflash(nextNewsflash);
+				tweetService.tweetText(nextNewsflash.getNewsText(), "FAKENEWS");
 				nextNewsflash.setStatus(Newsflash.STATUS_PUBLISHED);
 				newsDAO.saveNewsflash(nextNewsflash);
 			}

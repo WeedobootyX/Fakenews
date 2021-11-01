@@ -1,5 +1,8 @@
 package se.bubbelbubbel.fakenews.dao;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,7 @@ import preparedstatementcreator.TweetRequestPSCreator;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
+import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
 
 @Component
 public class TweetDAO {
@@ -45,13 +49,13 @@ public class TweetDAO {
 		logger.debug("saveTweet: " + tweet.getId());
 		String INSERT_TWEET = 
 				"INSERT INTO " + DATABASE_NAME + ".tweets " +
-				"(text, scheduled_time, sent_time, status, tweet_request_id) " +
+				"( " + TweetRowMapper.COLUMNS_INSERT + " ) " +
 				"VALUES (?, ?, null, ?, ?) ";
 		
 		String UPDATE_TWEET =
 				"UPDATE " + DATABASE_NAME + ".tweets " +
-				"SET text = ?, scheduled_time = ?, sent_time = ?, status = ?, tweet_request_id = ? " + 
-				"WHERE tweet_request_id = ? ";
+				"SET " + TweetRowMapper.COLUMNS_UPDATE + 
+				"WHERE id = ? ";
 
 		try {
 			if(tweet.getId() == 0) {
@@ -75,6 +79,27 @@ public class TweetDAO {
 			String errorMsg = " Exception caught in saveTweet for tweet: " + tweet.toString() + " - " + e.getClass() + " with message: " + e.getMessage();
 			logger.error(errorMsg);
 			throw new DatabaseErrorException(errorMsg);
+		}
+	}
+
+	public List<Tweet> getUnpublishedTweets() {
+		logger.debug("publishTweets");
+		String SELECT_DUE_TWEETS =
+			"SELECT " + TweetRowMapper.COLUMNS_SELECT +
+			"FROM " + DATABASE_NAME + ".tweets " +
+			"WHERE status = ? " +
+			"AND send_date < now() ";
+		
+		try {
+			List<Tweet> tweets = jdbcTemplate.query(SELECT_DUE_TWEETS,
+							   						new Object[] {Tweet.PENDING},
+							   						new TweetRowMapper());
+			return tweets;
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in getUnpublishedTweets: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+			return new ArrayList<Tweet>();
 		}
 	}
 }
