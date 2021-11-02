@@ -11,7 +11,7 @@ import se.bubbelbubbel.fakenews.model.Tweet;
 public class TweetRowMapper implements RowMapper <Tweet>{
 
 	public static final String COLUMNS_SELECT =
-			" id, text, scheduled_time, sent_time, status, tweet_request_id ";
+			" tweet_id, text, scheduled_time, sent_time, status, tweet_request_id ";
 
 	public static final String COLUMNS_UPDATE =
 			" text = ?, scheduled_time = ?, sent_time = ?, status = ?, tweet_request_id = ? ";

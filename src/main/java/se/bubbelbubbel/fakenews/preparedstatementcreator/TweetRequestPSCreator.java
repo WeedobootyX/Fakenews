@@ -1,4 +1,4 @@
-package preparedstatementcreator;
+package se.bubbelbubbel.fakenews.preparedstatementcreator;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,7 +30,7 @@ public class TweetRequestPSCreator implements PreparedStatementCreator{
 						"INSERT INTO " + DATABASE_NAME + ".tweet_requests " +
 						"(text, send_schedule, received ) " + 
 						"VALUES(?, ?, now()) ";
-			PreparedStatement ps = connection.prepareStatement(INSERT_TWEET_REQUEST, new String[] {"id"});
+			PreparedStatement ps = connection.prepareStatement(INSERT_TWEET_REQUEST, new String[] {"tweet_id"});
 			ps.setString(1, tweetRequest.getText());
 			ps.setString(2, tweetRequest.getSendSchedule());
 			return ps;

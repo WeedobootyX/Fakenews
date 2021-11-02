@@ -12,10 +12,10 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
-import preparedstatementcreator.TweetRequestPSCreator;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
+import se.bubbelbubbel.fakenews.preparedstatementcreator.TweetRequestPSCreator;
 import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
 
 @Component
@@ -55,7 +55,7 @@ public class TweetDAO {
 		String UPDATE_TWEET =
 				"UPDATE " + DATABASE_NAME + ".tweets " +
 				"SET " + TweetRowMapper.COLUMNS_UPDATE + 
-				"WHERE id = ? ";
+				"WHERE tweet_id = ? ";
 
 		try {
 			if(tweet.getId() == 0) {
@@ -88,7 +88,7 @@ public class TweetDAO {
 			"SELECT " + TweetRowMapper.COLUMNS_SELECT +
 			"FROM " + DATABASE_NAME + ".tweets " +
 			"WHERE status = ? " +
-			"AND send_date < now() ";
+			"AND scheduled_time < now() ";
 		
 		try {
 			List<Tweet> tweets = jdbcTemplate.query(SELECT_DUE_TWEETS,

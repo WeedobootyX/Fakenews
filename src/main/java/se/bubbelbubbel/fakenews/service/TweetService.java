@@ -44,7 +44,7 @@ public class TweetService {
 		TweetRequest tweetRequest;
 		try {
 			tweetRequest = jsonMapper.readValue(tweetRequestJson, TweetRequest.class);
-			if(tweetRequest.getText().length() > 280) {
+			if(tweetRequest.getText().length() > 280 || tweetRequest.getText().length() == 0) {
 				throw new IllegalTweetRequestException("Illegal tweet request rejected");
 			}
 			tweetRequest = tweetDAO.saveTweetRequest(tweetRequest);
