@@ -16,7 +16,9 @@ import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.preparedstatementcreator.TweetRequestPSCreator;
+import se.bubbelbubbel.fakenews.rowmapper.MonitoredAccountRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
+import se.bubbelbubbel.fakenews.model.MonitoredAccount;
 
 @Component
 public class TweetDAO {
@@ -83,7 +85,7 @@ public class TweetDAO {
 	}
 
 	public List<Tweet> getUnpublishedTweets() {
-		logger.debug("publishTweets");
+		logger.debug("getUnPublishedTweets");
 		String SELECT_DUE_TWEETS =
 			"SELECT " + TweetRowMapper.COLUMNS_SELECT +
 			"FROM " + DATABASE_NAME + ".tweets " +
@@ -102,4 +104,42 @@ public class TweetDAO {
 			return new ArrayList<Tweet>();
 		}
 	}
-}
+
+	public List<MonitoredAccount> getMonitoredAccounts() throws DatabaseErrorException {
+		logger.debug("getMonitoredAccounts");
+		String SELECT_MONITORED_ACCOUNTS =
+			"SELECT " + MonitoredAccountRowMapper.COLUMNS_SELECT +
+			"FROM " + DATABASE_NAME + ".monitored_accounts ";
+		
+		try {
+			List<MonitoredAccount> monitoredAccounts = jdbcTemplate.query(SELECT_MONITORED_ACCOUNTS,
+							   											  new MonitoredAccountRowMapper());
+			return monitoredAccounts;
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in getMonitoredAccounts: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+			throw new DatabaseErrorException(errMsg);
+		}
+	}
+	
+	public void saveMonitoredAccount(MonitoredAccount monitoredAccount) throws DatabaseErrorException {
+		String UPDATE_MONITORED_ACCOUNT =
+				"UPDATE " + DATABASE_NAME + ".monitored_accounts " +
+				"SET " + MonitoredAccountRowMapper.COLUMNS_UPDATE + 
+				"WHERE user_name = ? ";
+
+		try {
+				jdbcTemplate.update(UPDATE_MONITORED_ACCOUNT,
+						new Object[] {monitoredAccount.getName(),
+									  monitoredAccount.getImageURL(),
+									  monitoredAccount.getUserId(),
+									  monitoredAccount.getUserName()});
+			}
+		catch (Exception e) {
+			String errorMsg = " Exception caught in saveMonitoredAccount for user name: " + monitoredAccount.getUserName() + " - " + e.getClass() + " with message: " + e.getMessage();
+			logger.error(errorMsg);
+			throw new DatabaseErrorException(errorMsg);
+		}
+	}
+} 

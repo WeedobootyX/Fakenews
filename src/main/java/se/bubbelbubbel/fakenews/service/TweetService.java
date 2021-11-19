@@ -19,14 +19,17 @@ import se.bubbelbubbel.fakenews.exception.IllegalTweetRequestException;
 import se.bubbelbubbel.fakenews.exception.SnippetsNotFoundException;
 import se.bubbelbubbel.fakenews.exception.StructureNotFoundException;
 import se.bubbelbubbel.fakenews.exception.SystemParameterNotFoundException;
+import se.bubbelbubbel.fakenews.model.MonitoredAccount;
 import se.bubbelbubbel.fakenews.model.Newsflash;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.model.TweetScheduleEntry;
+import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
+import twitter4j.User;
 import twitter4j.auth.AccessToken;
 
 @EnableScheduling
@@ -107,6 +110,56 @@ public class TweetService {
 		}
 		catch (Exception e) {
 			logger.error("Exception caught: " + e.getClass() + " - " + e.getMessage());
+		}
+	}
+	
+	@Scheduled(fixedRate=300000)
+	public void getTweets( ) {
+//		logger.debug("Getting status updates from monitored accounts");
+//		String prefix = "SCHEDULER";
+//		try {
+//			List<MonitoredAccount> accounts = tweetDAO.getMonitoredAccounts();
+//			String twitterAccessToken = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN");
+//			String twitterAccessTokenSecret = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN_SECRET");
+//			String twitterOauthConsumerKey = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_KEY");
+//			String twitterOauthConsumerSecret = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_SECRET");
+//			AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
+//			Twitter twitter = new TwitterFactory().getInstance();
+//			twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
+//			twitter.setOAuthAccessToken(accessToken);
+//			accounts.forEach(account -> processStatusUpdates(account, twitter));
+//		}
+//		catch (Exception e) {
+//			logger.error("Exception caught in getTweets: " + e.getClass() + " - " + e.getMessage());
+//		}
+	}
+
+	private void processStatusUpdates(MonitoredAccount monitoredAccount, Twitter twitter) {
+		logger.debug("processStatusUpdates for: " + monitoredAccount.getUserName());
+		try {
+			if(monitoredAccount.getUserId() == 0 || monitoredAccount.getName() == null) {
+				setupMonitoredAccount(monitoredAccount, twitter);
+			}
+			ResponseList<Status> statusList;
+			statusList = twitter.getUserTimeline(monitoredAccount.getUserId());
+			statusList.forEach(status -> logger.debug(status.getId() + " - " + status.getText()));
+		} catch (TwitterException e) {
+			logger.error("Exception caught in processStatusUpdates: " + e.getClass() + " - " + e.getMessage());
+		} catch (DatabaseErrorException e) {
+		}
+	}
+
+	private void setupMonitoredAccount(MonitoredAccount monitoredAccount, Twitter twitter) throws DatabaseErrorException {
+		logger.debug("setupMonitoredAccount for: " + monitoredAccount.getUserName());
+		User user;
+		try {
+			user = twitter.showUser(monitoredAccount.getUserName());
+			monitoredAccount.setName(user.getName());
+			monitoredAccount.setUserId(user.getId());
+			monitoredAccount.setImageURL(user.get400x400ProfileImageURLHttps());
+			tweetDAO.saveMonitoredAccount(monitoredAccount);
+		} catch (TwitterException e) {
+			logger.error("Exception caught in getStatusUpdates: " + e.getClass() + " - " + e.getMessage());
 		}
 	}
 }
