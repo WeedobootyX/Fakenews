@@ -1,6 +1,9 @@
 package se.bubbelbubbel.fakenews.dao;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -18,6 +21,7 @@ import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.preparedstatementcreator.TweetRequestPSCreator;
 import se.bubbelbubbel.fakenews.rowmapper.MonitoredAccountRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
+import twitter4j.Status;
 import se.bubbelbubbel.fakenews.model.MonitoredAccount;
 
 @Component
@@ -140,6 +144,40 @@ public class TweetDAO {
 			String errorMsg = " Exception caught in saveMonitoredAccount for user name: " + monitoredAccount.getUserName() + " - " + e.getClass() + " with message: " + e.getMessage();
 			logger.error(errorMsg);
 			throw new DatabaseErrorException(errorMsg);
+		}
+	}
+
+	public void saveStatus(Status status) throws DatabaseErrorException {
+		String INSERT_STATUS =
+			"INSERT INTO " + DATABASE_NAME + ".status_updates " +
+			"(monitorer, user_name, text, created_at, status_id) values (?, ?, ?, ?, ?) ";
+		try {
+			jdbcTemplate.update(INSERT_STATUS,
+					new Object[] {"valhajen",
+								  status.getUser().getName(),
+								  status.getText(),
+								  LocalDateTime.ofInstant(status.getCreatedAt().toInstant(), ZoneId.systemDefault()),
+								  status.getId()}
+			);
+		}
+		catch (Exception e) {
+			String errorMsg = " Exception caught in saveStatus for monitorer valhajen: " + " - " + e.getClass() + " with message: " + e.getMessage();
+			logger.error(errorMsg);
+			throw new DatabaseErrorException(errorMsg);
+		}
+	}
+	
+	public void statusCleanup() {
+		logger.debug("deleting old statuses");
+		String DELETE_STATUSES =
+			"DELETE FROM " + DATABASE_NAME + ".status_updates " +
+			"WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)";
+		try {
+			jdbcTemplate.update(DELETE_STATUSES);
+		}
+		catch (Exception e) {
+			String errorMsg = " Exception caught in statusCleanup - " + e.getClass() + " with message: " + e.getMessage();
+			logger.error(errorMsg);
 		}
 	}
 } 

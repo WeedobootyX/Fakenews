@@ -113,25 +113,25 @@ public class TweetService {
 		}
 	}
 	
-	@Scheduled(fixedRate=300000)
+	@Scheduled(fixedRate=3600000)
 	public void getTweets( ) {
-//		logger.debug("Getting status updates from monitored accounts");
-//		String prefix = "SCHEDULER";
-//		try {
-//			List<MonitoredAccount> accounts = tweetDAO.getMonitoredAccounts();
-//			String twitterAccessToken = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN");
-//			String twitterAccessTokenSecret = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN_SECRET");
-//			String twitterOauthConsumerKey = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_KEY");
-//			String twitterOauthConsumerSecret = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_SECRET");
-//			AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
-//			Twitter twitter = new TwitterFactory().getInstance();
-//			twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
-//			twitter.setOAuthAccessToken(accessToken);
-//			accounts.forEach(account -> processStatusUpdates(account, twitter));
-//		}
-//		catch (Exception e) {
-//			logger.error("Exception caught in getTweets: " + e.getClass() + " - " + e.getMessage());
-//		}
+		logger.debug("Getting status updates from monitored accounts");
+		String prefix = "SCHEDULER";
+		try {
+			List<MonitoredAccount> accounts = tweetDAO.getMonitoredAccounts();
+			String twitterAccessToken = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN");
+			String twitterAccessTokenSecret = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN_SECRET");
+			String twitterOauthConsumerKey = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_KEY");
+			String twitterOauthConsumerSecret = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_SECRET");
+			AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
+			Twitter twitter = new TwitterFactory().getInstance();
+			twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
+			twitter.setOAuthAccessToken(accessToken);
+			accounts.forEach(account -> processStatusUpdates(account, twitter));
+		}
+		catch (Exception e) {
+			logger.error("Exception caught in getTweets: " + e.getClass() + " - " + e.getMessage());
+		}
 	}
 
 	private void processStatusUpdates(MonitoredAccount monitoredAccount, Twitter twitter) {
@@ -142,13 +142,25 @@ public class TweetService {
 			}
 			ResponseList<Status> statusList;
 			statusList = twitter.getUserTimeline(monitoredAccount.getUserId());
-			statusList.forEach(status -> logger.debug(status.getId() + " - " + status.getText()));
+			statusList.forEach(status -> saveStatus(status));
 		} catch (TwitterException e) {
 			logger.error("Exception caught in processStatusUpdates: " + e.getClass() + " - " + e.getMessage());
 		} catch (DatabaseErrorException e) {
 		}
 	}
 
+	private void saveStatus(Status status) {
+		try {
+			tweetDAO.saveStatus(status);
+		} catch (DatabaseErrorException e) {
+		}
+	}
+
+	@Scheduled(fixedRate=3600000)
+	public void cleanupOldStatuses() {
+		tweetDAO.statusCleanup();
+	}
+	
 	private void setupMonitoredAccount(MonitoredAccount monitoredAccount, Twitter twitter) throws DatabaseErrorException {
 		logger.debug("setupMonitoredAccount for: " + monitoredAccount.getUserName());
 		User user;
