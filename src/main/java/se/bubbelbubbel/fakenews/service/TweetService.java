@@ -2,6 +2,7 @@ package se.bubbelbubbel.fakenews.service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -20,7 +21,9 @@ import se.bubbelbubbel.fakenews.exception.SnippetsNotFoundException;
 import se.bubbelbubbel.fakenews.exception.StructureNotFoundException;
 import se.bubbelbubbel.fakenews.exception.SystemParameterNotFoundException;
 import se.bubbelbubbel.fakenews.model.MonitoredAccount;
+import se.bubbelbubbel.fakenews.model.Monitorer;
 import se.bubbelbubbel.fakenews.model.Newsflash;
+import se.bubbelbubbel.fakenews.model.StatusUpdate;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.model.TweetScheduleEntry;
@@ -114,11 +117,19 @@ public class TweetService {
 	}
 	
 	@Scheduled(fixedRate=3600000)
-	public void getTweets( ) {
-		logger.debug("Getting status updates from monitored accounts");
+	public void monitor() {
+		List<Monitorer> monitorers = tweetDAO.getMonitorers();
+		cleanupOldStatuses();
+		cleanupWords();
+		monitorers.forEach(monitorer -> getStatusUpdates(monitorer));
+		monitorers.forEach(monitorer -> buildTrendingWords(monitorer));
+	}
+	
+	private void getStatusUpdates(Monitorer monitorer) {
+		logger.debug("Getting status updates for monitorer: " + monitorer.getUserName());
 		String prefix = "SCHEDULER";
 		try {
-			List<MonitoredAccount> accounts = tweetDAO.getMonitoredAccounts();
+			List<MonitoredAccount> monitoredAccounts = tweetDAO.getMonitoredAccounts(monitorer);
 			String twitterAccessToken = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN");
 			String twitterAccessTokenSecret = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN_SECRET");
 			String twitterOauthConsumerKey = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_KEY");
@@ -127,10 +138,10 @@ public class TweetService {
 			Twitter twitter = new TwitterFactory().getInstance();
 			twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
 			twitter.setOAuthAccessToken(accessToken);
-			accounts.forEach(account -> processStatusUpdates(account, twitter));
+			monitoredAccounts.forEach(monitoredAccount -> processStatusUpdates(monitoredAccount, twitter));
 		}
 		catch (Exception e) {
-			logger.error("Exception caught in getTweets: " + e.getClass() + " - " + e.getMessage());
+			logger.error("Exception caught in getStatusUpdates: " + e.getClass() + " - " + e.getMessage());
 		}
 	}
 
@@ -150,15 +161,15 @@ public class TweetService {
 	}
 
 	private void saveStatus(Status status) {
-		try {
-			tweetDAO.saveStatus(status);
-		} catch (DatabaseErrorException e) {
-		}
+		tweetDAO.saveStatus(status);
 	}
 
-	@Scheduled(fixedRate=3600000)
-	public void cleanupOldStatuses() {
+	private void cleanupOldStatuses() {
 		tweetDAO.statusCleanup();
+	}
+	
+	private void cleanupWords() {
+		tweetDAO.cleanupWords();
 	}
 	
 	private void setupMonitoredAccount(MonitoredAccount monitoredAccount, Twitter twitter) throws DatabaseErrorException {
@@ -173,5 +184,25 @@ public class TweetService {
 		} catch (TwitterException e) {
 			logger.error("Exception caught in getStatusUpdates: " + e.getClass() + " - " + e.getMessage());
 		}
+	}
+
+	private void buildTrendingWords(Monitorer monitorer) {
+		logger.debug("buildTrendingWords for monitorer: " + monitorer.getUserName());
+		List<StatusUpdate> statusUpdates = tweetDAO.getMonitoredStatusUpdates(monitorer.getUserName());
+		statusUpdates.forEach(statusUpdate -> processWords(monitorer, statusUpdate));
+	}
+
+	private void processWords(Monitorer monitorer, StatusUpdate statusUpdate) {
+		List<String> words = Arrays.asList(statusUpdate.getText().split(" "));
+		words.forEach(word -> processWord(monitorer, word));
+	}
+
+	private void processWord(Monitorer monitorer, String word) {
+		String cleanWord = word.replace(".", "")
+							   .replace(",", "")
+							   .replace("!", "")
+							   .replace("?", "")
+							   .replace("\"", "");
+		tweetDAO.incrementWord(monitorer, cleanWord);
 	}
 }

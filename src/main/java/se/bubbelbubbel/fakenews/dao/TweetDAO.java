@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -20,9 +21,12 @@ import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.preparedstatementcreator.TweetRequestPSCreator;
 import se.bubbelbubbel.fakenews.rowmapper.MonitoredAccountRowMapper;
+import se.bubbelbubbel.fakenews.rowmapper.StatusUpdateRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
 import twitter4j.Status;
 import se.bubbelbubbel.fakenews.model.MonitoredAccount;
+import se.bubbelbubbel.fakenews.model.Monitorer;
+import se.bubbelbubbel.fakenews.model.StatusUpdate;
 
 @Component
 public class TweetDAO {
@@ -109,22 +113,24 @@ public class TweetDAO {
 		}
 	}
 
-	public List<MonitoredAccount> getMonitoredAccounts() throws DatabaseErrorException {
+	public List<MonitoredAccount> getMonitoredAccounts(Monitorer monitorer) {
 		logger.debug("getMonitoredAccounts");
 		String SELECT_MONITORED_ACCOUNTS =
 			"SELECT " + MonitoredAccountRowMapper.COLUMNS_SELECT +
-			"FROM " + DATABASE_NAME + ".monitored_accounts ";
+			"FROM " + DATABASE_NAME + ".monitored_accounts " +
+			"WHERE monitorer =? ";
 		
+		List<MonitoredAccount> monitoredAccounts = new ArrayList<MonitoredAccount>();
 		try {
-			List<MonitoredAccount> monitoredAccounts = jdbcTemplate.query(SELECT_MONITORED_ACCOUNTS,
-							   											  new MonitoredAccountRowMapper());
-			return monitoredAccounts;
+			monitoredAccounts = jdbcTemplate.query(SELECT_MONITORED_ACCOUNTS,
+												   new Object[] {monitorer.getUserName()},
+							   					   new MonitoredAccountRowMapper());
 		}
 		catch (Exception e) {
 			String errMsg = "Exception caught in getMonitoredAccounts: " + e.getClass() + " - " + e.getMessage();
 			logger.error(errMsg);
-			throw new DatabaseErrorException(errMsg);
 		}
+		return monitoredAccounts;
 	}
 	
 	public void saveMonitoredAccount(MonitoredAccount monitoredAccount) throws DatabaseErrorException {
@@ -147,7 +153,7 @@ public class TweetDAO {
 		}
 	}
 
-	public void saveStatus(Status status) throws DatabaseErrorException {
+	public void saveStatus(Status status) {
 		String INSERT_STATUS =
 			"INSERT INTO " + DATABASE_NAME + ".status_updates " +
 			"(monitorer, user_name, text, created_at, status_id) values (?, ?, ?, ?, ?) ";
@@ -160,10 +166,12 @@ public class TweetDAO {
 								  status.getId()}
 			);
 		}
+		catch(DuplicateKeyException e) {
+			//this is normal
+		}
 		catch (Exception e) {
-			String errorMsg = " Exception caught in saveStatus for monitorer valhajen: " + " - " + e.getClass() + " with message: " + e.getMessage();
+			String errorMsg = " Exception caught in saveStatus: " + " - " + e.getClass() + " with message: " + e.getMessage();
 			logger.error(errorMsg);
-			throw new DatabaseErrorException(errorMsg);
 		}
 	}
 	
@@ -171,13 +179,110 @@ public class TweetDAO {
 		logger.debug("deleting old statuses");
 		String DELETE_STATUSES =
 			"DELETE FROM " + DATABASE_NAME + ".status_updates " +
-			"WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)";
+			"WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 DAY)";
 		try {
 			jdbcTemplate.update(DELETE_STATUSES);
 		}
 		catch (Exception e) {
 			String errorMsg = " Exception caught in statusCleanup - " + e.getClass() + " with message: " + e.getMessage();
 			logger.error(errorMsg);
+		}
+	}
+
+	public List<StatusUpdate> getMonitoredStatusUpdates(String monitorer) {
+		logger.debug("getMonitoredStatusUpdates");
+		String SELECT_UPDATES_BY_MONITORER =
+			"SELECT " + StatusUpdateRowMapper.COLUMNS_SELECT +
+			"FROM " + DATABASE_NAME + ".status_updates " +
+			"WHERE monitorer = ? ";
+		
+		try {
+			List<StatusUpdate> statusUpdates = jdbcTemplate.query(SELECT_UPDATES_BY_MONITORER,
+							   						new Object[] {monitorer},
+							   						new StatusUpdateRowMapper());
+			return statusUpdates;
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in getMonitoredStatusUpdates: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+			return new ArrayList<StatusUpdate>();
+		}
+	}
+
+	public void incrementWord(Monitorer monitorer, String word) {
+		String INSERT_WORD =
+			"INSERT INTO " + DATABASE_NAME + ".trending_words " +
+			"(monitorer, word, count) values (?, ?, 1) ";
+		
+		String INCREMENT_WORD =
+			"UPDATE " + DATABASE_NAME + ".trending_words " + 
+			"SET count = count +1 " + 
+			"WHERE monitorer = ? "+
+			"AND word = ? ";
+		
+		try {
+			if(wordExists(monitorer, word)) {
+				jdbcTemplate.update(INCREMENT_WORD,
+						new Object[] {monitorer.getUserName(), word});
+			}
+			else {
+				jdbcTemplate.update(INSERT_WORD,
+						new Object[] {monitorer.getUserName(), word});
+				
+			}
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in incrementWord: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+		}
+	}
+
+	private boolean wordExists(Monitorer monitorer, String word) {
+		String COUNT_WORD =
+			"SELECT COUNT(1) "+
+			"FROM " + DATABASE_NAME + ".trending_words " +
+			"WHERE monitorer = ? AND word = ? ";
+		boolean response = false;
+		
+		try {
+			int wordCount = jdbcTemplate.queryForObject(COUNT_WORD,
+														new Object[] {monitorer.getUserName(), word},
+														Integer.class);
+			if(wordCount > 0) {
+				response = true;
+			}
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in wordExists: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+		}
+		return response;
+	}
+	
+	public List<Monitorer> getMonitorers() {
+		String SELECT_MONITORERS =
+			"SELECT user_name FROM " + DATABASE_NAME + ".monitorers ";
+		List<Monitorer> monitorers = new ArrayList<Monitorer>();
+		try {
+			List<String> userNames = jdbcTemplate.queryForList(SELECT_MONITORERS, String.class);
+			userNames.forEach(userName -> monitorers.add(new Monitorer(userName)));
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in getMonitorers: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+		}
+		return monitorers;
+	}
+
+	public void cleanupWords() {
+		String TRUNCATE_TABLE =
+			"TRUNCATE TABLE " + DATABASE_NAME + ".trending_words ";
+		try {
+			jdbcTemplate.update(TRUNCATE_TABLE);
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in cleanupWords: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
 		}
 	}
 } 
