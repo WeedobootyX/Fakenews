@@ -153,13 +153,13 @@ public class TweetDAO {
 		}
 	}
 
-	public void saveStatus(Status status) {
+	public void saveStatus(Status status, Monitorer monitorer) {
 		String INSERT_STATUS =
 			"INSERT INTO " + DATABASE_NAME + ".status_updates " +
 			"(monitorer, user_name, text, created_at, status_id) values (?, ?, ?, ?, ?) ";
 		try {
 			jdbcTemplate.update(INSERT_STATUS,
-					new Object[] {"valhajen",
+					new Object[] {monitorer.getUserName(),
 								  status.getUser().getName(),
 								  status.getText(),
 								  LocalDateTime.ofInstant(status.getCreatedAt().toInstant(), ZoneId.systemDefault()),
@@ -189,8 +189,7 @@ public class TweetDAO {
 		}
 	}
 
-	public List<StatusUpdate> getMonitoredStatusUpdates(String monitorer) {
-		logger.debug("getMonitoredStatusUpdates");
+	public List<StatusUpdate> getMonitoredStatusUpdates(Monitorer monitorer) {
 		String SELECT_UPDATES_BY_MONITORER =
 			"SELECT " + StatusUpdateRowMapper.COLUMNS_SELECT +
 			"FROM " + DATABASE_NAME + ".status_updates " +
@@ -198,7 +197,7 @@ public class TweetDAO {
 		
 		try {
 			List<StatusUpdate> statusUpdates = jdbcTemplate.query(SELECT_UPDATES_BY_MONITORER,
-							   						new Object[] {monitorer},
+							   						new Object[] {monitorer.getUserName()},
 							   						new StatusUpdateRowMapper());
 			return statusUpdates;
 		}

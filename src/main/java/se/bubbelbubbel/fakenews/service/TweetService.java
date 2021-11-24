@@ -117,16 +117,18 @@ public class TweetService {
 	}
 	
 	@Scheduled(fixedRate=3600000)
-	public void monitor() {
+	public void monitorTweets() {
+		logger.info("Tweet monitoring begins");
 		List<Monitorer> monitorers = tweetDAO.getMonitorers();
 		cleanupOldStatuses();
 		cleanupWords();
 		monitorers.forEach(monitorer -> getStatusUpdates(monitorer));
+		logger.info("building word analysis");
 		monitorers.forEach(monitorer -> buildTrendingWords(monitorer));
+		logger.info("Tweet monitoring completed");
 	}
 	
 	private void getStatusUpdates(Monitorer monitorer) {
-		logger.debug("Getting status updates for monitorer: " + monitorer.getUserName());
 		String prefix = "SCHEDULER";
 		try {
 			List<MonitoredAccount> monitoredAccounts = tweetDAO.getMonitoredAccounts(monitorer);
@@ -138,14 +140,14 @@ public class TweetService {
 			Twitter twitter = new TwitterFactory().getInstance();
 			twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
 			twitter.setOAuthAccessToken(accessToken);
-			monitoredAccounts.forEach(monitoredAccount -> processStatusUpdates(monitoredAccount, twitter));
+			monitoredAccounts.forEach(monitoredAccount -> processStatusUpdates(monitoredAccount, twitter, monitorer));
 		}
 		catch (Exception e) {
 			logger.error("Exception caught in getStatusUpdates: " + e.getClass() + " - " + e.getMessage());
 		}
 	}
 
-	private void processStatusUpdates(MonitoredAccount monitoredAccount, Twitter twitter) {
+	private void processStatusUpdates(MonitoredAccount monitoredAccount, Twitter twitter, Monitorer monitorer) {
 		logger.debug("processStatusUpdates for: " + monitoredAccount.getUserName());
 		try {
 			if(monitoredAccount.getUserId() == 0 || monitoredAccount.getName() == null) {
@@ -153,15 +155,15 @@ public class TweetService {
 			}
 			ResponseList<Status> statusList;
 			statusList = twitter.getUserTimeline(monitoredAccount.getUserId());
-			statusList.forEach(status -> saveStatus(status));
+			statusList.forEach(status -> saveStatus(status, monitorer));
 		} catch (TwitterException e) {
 			logger.error("Exception caught in processStatusUpdates: " + e.getClass() + " - " + e.getMessage());
 		} catch (DatabaseErrorException e) {
 		}
 	}
 
-	private void saveStatus(Status status) {
-		tweetDAO.saveStatus(status);
+	private void saveStatus(Status status, Monitorer monitorer) {
+		tweetDAO.saveStatus(status,  monitorer);
 	}
 
 	private void cleanupOldStatuses() {
@@ -187,8 +189,7 @@ public class TweetService {
 	}
 
 	private void buildTrendingWords(Monitorer monitorer) {
-		logger.debug("buildTrendingWords for monitorer: " + monitorer.getUserName());
-		List<StatusUpdate> statusUpdates = tweetDAO.getMonitoredStatusUpdates(monitorer.getUserName());
+		List<StatusUpdate> statusUpdates = tweetDAO.getMonitoredStatusUpdates(monitorer);
 		statusUpdates.forEach(statusUpdate -> processWords(monitorer, statusUpdate));
 	}
 
