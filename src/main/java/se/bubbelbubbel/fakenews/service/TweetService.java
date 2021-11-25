@@ -17,16 +17,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import se.bubbelbubbel.fakenews.dao.TweetDAO;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.exception.IllegalTweetRequestException;
-import se.bubbelbubbel.fakenews.exception.SnippetsNotFoundException;
-import se.bubbelbubbel.fakenews.exception.StructureNotFoundException;
 import se.bubbelbubbel.fakenews.exception.SystemParameterNotFoundException;
 import se.bubbelbubbel.fakenews.model.MonitoredAccount;
 import se.bubbelbubbel.fakenews.model.Monitorer;
-import se.bubbelbubbel.fakenews.model.Newsflash;
 import se.bubbelbubbel.fakenews.model.StatusUpdate;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.model.TweetScheduleEntry;
+import se.bubbelbubbel.fakenews.model.WordFilter;
 import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.Twitter;
@@ -43,6 +41,8 @@ public class TweetService {
 	@Autowired TweetDAO tweetDAO;
 		
 	@Autowired SystemService systemService;
+	
+	private WordFilter wordFilter;
 	
 	public String addTweet(String tweetRequestJson) throws IOException, DatabaseErrorException, IllegalTweetRequestException {
 		logger.debug("Adding tweet: " + tweetRequestJson);
@@ -124,6 +124,7 @@ public class TweetService {
 		cleanupWords();
 		monitorers.forEach(monitorer -> getStatusUpdates(monitorer));
 		logger.info("building word analysis");
+		wordFilter = new WordFilter();
 		monitorers.forEach(monitorer -> buildTrendingWords(monitorer));
 		logger.info("Tweet monitoring completed");
 	}
@@ -199,11 +200,17 @@ public class TweetService {
 	}
 
 	private void processWord(Monitorer monitorer, String word) {
-		String cleanWord = word.replace(".", "")
-							   .replace(",", "")
-							   .replace("!", "")
-							   .replace("?", "")
-							   .replace("\"", "");
-		tweetDAO.incrementWord(monitorer, cleanWord);
+		word = word.toLowerCase()
+				   .replace(".", "")
+				   .replace(",", "")
+				   .replace("!", "")
+				   .replace("?", "")
+				   .replace("\"", "")
+				   .trim();
+		logger.debug("Kollar ordet: " + word);
+		if(word.length() > 0 && !wordFilter.isFiltered(word)) {
+			tweetDAO.incrementWord(monitorer, word);
+			logger.debug("det var inte filtrerat");
+		}
 	}
 }
