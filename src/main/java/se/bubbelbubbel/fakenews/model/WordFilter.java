@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class WordFilter {
-	private String filteredWordsStr = "to,rt,har,ett,för,att,de,som,på,du,rätt,det,är,inte,med,där,bara,och,lite,om,jag,man,sig,i,går,utan,vill,här,eller,upp,men,mot,måste,samma,någon,ska,dem,få,den,sedan,alltså,ta,över,in,till,hela,ha,kan,vara,så,sitt,kommer,en,tid,då,folk,allt,vi,just,igenom,var,av,blir,alla,vem,håller,efter,vad,&,när,nu,tack,hade,inget,göra,ingen,ju,dig,mer,ge,under,-,får,än,gång,annat,väl,tar,första,andra,finns,detta,skulle,se,fram,igen,även,idag,år,från,två,nya,bli,borde,denna,säger,hur,the,ni,gjort,er,ändå,inom,han,många,nej,verkar,ja,trots,din,något,ut,ser,gå,sin,varit,hon";
+	private String filteredWordsStr = "to,rt,har,ett,för,att,de,som,på,du,rätt,det,är,inte,med,där,bara,och,lite,om,jag,man,sig,i,går,utan,vill,här,eller,upp,men,mot,måste,samma,någon,ska,dem,få,den,sedan,alltså,ta,över,in,till,hela,ha,kan,vara,så,sitt,kommer,en,tid,då,folk,allt,vi,just,igenom,var,av,blir,alla,vem,håller,efter,vad,&,när,nu,tack,hade,inget,göra,gör,ingen,ju,dig,mer,ge,under,-,får,än,gång,annat,väl,tar,första,andra,finns,detta,skulle,se,fram,igen,även,idag,år,från,två,nya,bli,borde,denna,säger,hur,the,ni,gjort,er,ändå,inom,han,många,nej,verkar,ja,trots,din,något,ut,ser,gå,sin,varit,hon";
 	private List<String> filteredWords;
 	
 	public WordFilter() {
