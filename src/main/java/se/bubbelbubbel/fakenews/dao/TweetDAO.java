@@ -3,7 +3,6 @@ package se.bubbelbubbel.fakenews.dao;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -17,6 +16,9 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
+import se.bubbelbubbel.fakenews.model.MonitoredAccount;
+import se.bubbelbubbel.fakenews.model.Monitorer;
+import se.bubbelbubbel.fakenews.model.StatusUpdate;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.preparedstatementcreator.TweetRequestPSCreator;
@@ -24,9 +26,6 @@ import se.bubbelbubbel.fakenews.rowmapper.MonitoredAccountRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.StatusUpdateRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
 import twitter4j.Status;
-import se.bubbelbubbel.fakenews.model.MonitoredAccount;
-import se.bubbelbubbel.fakenews.model.Monitorer;
-import se.bubbelbubbel.fakenews.model.StatusUpdate;
 
 @Component
 public class TweetDAO {
@@ -281,6 +280,24 @@ public class TweetDAO {
 		}
 		catch (Exception e) {
 			String errMsg = "Exception caught in cleanupWords: " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+		}
+	}
+
+	public void addMonitoredAccount(String monitorer, String userName) {
+		logger.debug("Adding monitored account: " + userName + " for monitorer: " + monitorer);
+		String INSERT_MONITORED_ACCOUNT =
+			"INSERT INTO " + DATABASE_NAME + ".monitored_accounts (monitorer, user_name) " + 
+			"VALUES (?, ?) ";
+		try { 
+			jdbcTemplate.update(INSERT_MONITORED_ACCOUNT,
+								new Object[] {monitorer, userName});
+		}
+		catch(DuplicateKeyException e) {
+			logger.info("Dupe username not inserted: " + userName);
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in addMonitoredAccount: " + e.getClass() + " - " + e.getMessage();
 			logger.error(errMsg);
 		}
 	}

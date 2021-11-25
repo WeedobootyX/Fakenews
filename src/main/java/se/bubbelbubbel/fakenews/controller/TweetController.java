@@ -26,12 +26,22 @@ public class TweetController {
 	Logger logger = LoggerFactory.getLogger(TweetController.class);
 
 	@Autowired TweetService tweetService;
+	
 	@RequestMapping(value="/tweet/add", method=RequestMethod.POST,
 			headers={"Accept=application/json"})
 	@ResponseStatus(HttpStatus.CREATED)
 	public @ResponseBody String addTweet(@RequestBody String tweetRequestJson) throws IOException, DatabaseErrorException, IllegalTweetRequestException {  
 		logger.debug("Adding tweet. tweetRequestJson: " + tweetRequestJson);
 		return tweetService.addTweet(tweetRequestJson);
+	}
+	
+	@RequestMapping(value="/monitoredaccounts/add", method=RequestMethod.POST,
+			headers={"Accept=application/json"})
+	@ResponseStatus(HttpStatus.CREATED)
+	public @ResponseBody String addMonitoredAccounts(@RequestBody String addAccountsRequestJson) throws IOException, DatabaseErrorException, IllegalTweetRequestException {  
+		logger.debug("addMonitoredAccounts. addAccountsRequestJson: " + addAccountsRequestJson);
+		tweetService.addMonitoredAccounts(addAccountsRequestJson);
+		return "Done";
 	}
 	
 	@ExceptionHandler(IllegalTweetRequestException.class)

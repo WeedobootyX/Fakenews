@@ -18,6 +18,7 @@ import se.bubbelbubbel.fakenews.dao.TweetDAO;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.exception.IllegalTweetRequestException;
 import se.bubbelbubbel.fakenews.exception.SystemParameterNotFoundException;
+import se.bubbelbubbel.fakenews.model.AddAccountsRequest;
 import se.bubbelbubbel.fakenews.model.MonitoredAccount;
 import se.bubbelbubbel.fakenews.model.Monitorer;
 import se.bubbelbubbel.fakenews.model.StatusUpdate;
@@ -210,5 +211,22 @@ public class TweetService {
 		if(word.length() > 0 && !wordFilter.isFiltered(word)) {
 			tweetDAO.incrementWord(monitorer, word);
 		}
+	}
+
+	public void addMonitoredAccounts(String addAccountsRequestJson) {
+		logger.debug("addMonitoredAccounts: " + addAccountsRequestJson);
+		ObjectMapper jsonMapper = new ObjectMapper();
+		AddAccountsRequest addAccountsRequest;
+		try {
+			addAccountsRequest = jsonMapper.readValue(addAccountsRequestJson, AddAccountsRequest.class);
+			addAccountsRequest.getUserNameList().forEach(userName -> addMonitoredAccount(addAccountsRequest.getMonitorer(), userName));
+		} 
+		catch (IOException e) {
+			logger.error("IOException caught in addMonitoredAccounts: " + e.getMessage());
+		} 
+	}
+
+	private void addMonitoredAccount(String monitorer, String userName) {
+		tweetDAO.addMonitoredAccount(monitorer, userName);
 	}
 }
