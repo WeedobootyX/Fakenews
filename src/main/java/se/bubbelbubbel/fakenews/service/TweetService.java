@@ -207,10 +207,8 @@ public class TweetService {
 				   .replace("?", "")
 				   .replace("\"", "")
 				   .trim();
-		logger.debug("Kollar ordet: " + word);
 		if(word.length() > 0 && !wordFilter.isFiltered(word)) {
 			tweetDAO.incrementWord(monitorer, word);
-			logger.debug("det var inte filtrerat");
 		}
 	}
 }
