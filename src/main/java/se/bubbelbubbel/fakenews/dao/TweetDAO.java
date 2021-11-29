@@ -306,10 +306,10 @@ public class TweetDAO {
 	
 	public List<TrendingWord> getTrendingWords(Monitorer monitorer) {
 		String SELECT_TRENDING_WORDS =
-			"SELECT word, count(1) " +
+			"SELECT word, count " +
 			"FROM " + DATABASE_NAME + ".trending_words " +
 			"WHERE monitorer = ? " +
-			"GROUP BY word " +
+			"ORDER BY count DESC " +
 			"LIMIT 20 ";
 		
 		List<TrendingWord> trendingWords = new ArrayList<TrendingWord>();
