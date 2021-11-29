@@ -22,6 +22,7 @@ import se.bubbelbubbel.fakenews.model.AddAccountsRequest;
 import se.bubbelbubbel.fakenews.model.MonitoredAccount;
 import se.bubbelbubbel.fakenews.model.Monitorer;
 import se.bubbelbubbel.fakenews.model.StatusUpdate;
+import se.bubbelbubbel.fakenews.model.TrendingWord;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.model.TweetScheduleEntry;
@@ -228,5 +229,10 @@ public class TweetService {
 
 	private void addMonitoredAccount(String monitorer, String userName) {
 		tweetDAO.addMonitoredAccount(monitorer, userName);
+	}
+	
+	public List<TrendingWord> getTrendingWords(String monitorerUserName) {
+		Monitorer monitorer = new Monitorer(monitorerUserName);
+		return tweetDAO.getTrendingWords(monitorer);
 	}
 }

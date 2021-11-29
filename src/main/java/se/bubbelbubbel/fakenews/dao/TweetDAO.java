@@ -13,12 +13,14 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.model.MonitoredAccount;
 import se.bubbelbubbel.fakenews.model.Monitorer;
 import se.bubbelbubbel.fakenews.model.StatusUpdate;
+import se.bubbelbubbel.fakenews.model.TrendingWord;
 import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.preparedstatementcreator.TweetRequestPSCreator;
@@ -287,7 +289,7 @@ public class TweetDAO {
 	public void addMonitoredAccount(String monitorer, String userName) {
 		logger.debug("Adding monitored account: " + userName + " for monitorer: " + monitorer);
 		String INSERT_MONITORED_ACCOUNT =
-			"INSERT INTO " + DATABASE_NAME + ".monitored_accounts (monitorer, user_name) " + 
+			"INSERT INTO " + DATABASE_NAME + ".monitored_accounts (monitorer, user_name2) " + 
 			"VALUES (?, ?) ";
 		try { 
 			jdbcTemplate.update(INSERT_MONITORED_ACCOUNT,
@@ -300,5 +302,29 @@ public class TweetDAO {
 			String errMsg = "Exception caught in addMonitoredAccount: " + e.getClass() + " - " + e.getMessage();
 			logger.error(errMsg);
 		}
+	}
+	
+	public List<TrendingWord> getTrendingWords(Monitorer monitorer) {
+		String SELECT_TRENDING_WORDS =
+			"SELECT word, count(1) " +
+			"FROM " + DATABASE_NAME + ".trending_words " +
+			"WHERE monitorer = ? " +
+			"GROUP BY word " +
+			"LIMIT 20 ";
+		
+		List<TrendingWord> trendingWords = new ArrayList<TrendingWord>();
+		try { 
+			SqlRowSet rows = jdbcTemplate.queryForRowSet(SELECT_TRENDING_WORDS, 
+					new Object[] {monitorer.getUserName()});
+			while(rows.next()) {
+				TrendingWord trendingWord = new TrendingWord(rows.getString(1), rows.getInt(2));
+				trendingWords.add(trendingWord);
+			}
+		}
+		catch (Exception e) {
+			String errMsg = "Exception caught in getTrendingWords for monitorer: " + monitorer.getUserName() + " - " + e.getClass() + " - " + e.getMessage();
+			logger.error(errMsg);
+		}
+		return trendingWords;
 	}
 } 
