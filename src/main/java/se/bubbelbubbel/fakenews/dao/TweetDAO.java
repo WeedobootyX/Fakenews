@@ -27,6 +27,7 @@ import se.bubbelbubbel.fakenews.preparedstatementcreator.TweetRequestPSCreator;
 import se.bubbelbubbel.fakenews.rowmapper.MonitoredAccountRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.StatusUpdateRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
+import se.bubbelbubbel.fakenews.model.MonitoredTweet;
 import twitter4j.Status;
 
 @Component
@@ -326,5 +327,38 @@ public class TweetDAO {
 			logger.error(errMsg);
 		}
 		return trendingWords;
+	}
+
+	public List<MonitoredTweet> getTweetsByWord(String monitorerUserName, String word) {
+		logger.debug("getTweetsByWord");
+		String SELECT_TWEETS_BY_WORD =
+				"SELECT su.text, su.created_at, ma.user_name, ma.name, ma.image_url  " +
+				"FROM " + DATABASE_NAME + ".status_updates su, " +
+				DATABASE_NAME + ".monitored_accounts ma " +
+				"WHERE lower(su.monitorer) = ? " +
+				"AND lower(su.text) like ? " +
+				"AND ma.name = su.user_name "; // OBS! status updates har inte user_name
+			
+			List<MonitoredTweet> monitoredTweets = new ArrayList<MonitoredTweet>();
+			try { 
+				SqlRowSet rows = jdbcTemplate.queryForRowSet(SELECT_TWEETS_BY_WORD, 
+						new Object[] {monitorerUserName.toLowerCase(), 
+									  "%" + word.toLowerCase() + "%"});
+				while(rows.next()) {
+					MonitoredTweet monitoredTweet = new MonitoredTweet();
+					monitoredTweet.setText(rows.getString(1));
+					monitoredTweet.setCreatedAt((LocalDateTime) rows.getObject(2));
+					monitoredTweet.setUserName(rows.getString(3));
+					monitoredTweet.setName(rows.getString(4));
+					monitoredTweet.setImageUrl(rows.getString(5));
+					monitoredTweets.add(monitoredTweet);
+				}
+			}
+			catch (Exception e) {
+				String errMsg = "Exception caught in getTweetsByWord for monitorerUserName: " + monitorerUserName + " and word: " + word + " - " + e.getClass() + " - " + e.getMessage();
+				logger.error(errMsg);
+			}
+			logger.debug("Returning " + monitoredTweets.size() + " tweets");
+			return monitoredTweets;
 	}
 } 

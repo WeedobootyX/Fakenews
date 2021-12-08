@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import se.bubbelbubbel.fakenews.model.MonitoredTweet;
 import se.bubbelbubbel.fakenews.dao.TweetDAO;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.exception.IllegalTweetRequestException;
@@ -234,5 +235,9 @@ public class TweetService {
 	public List<TrendingWord> getTrendingWords(String monitorerUserName) {
 		Monitorer monitorer = new Monitorer(monitorerUserName);
 		return tweetDAO.getTrendingWords(monitorer);
+	}
+
+	public List<MonitoredTweet> getTweetsByWord(String monitorerUserName, String word) {
+		return tweetDAO.getTweetsByWord(monitorerUserName, word);
 	}
 }

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import se.bubbelbubbel.fakenews.exception.DatabaseErrorException;
 import se.bubbelbubbel.fakenews.exception.IllegalNewsflashException;
 import se.bubbelbubbel.fakenews.exception.IllegalTweetRequestException;
-import se.bubbelbubbel.fakenews.model.Newsflash;
+import se.bubbelbubbel.fakenews.model.MonitoredTweet;
 import se.bubbelbubbel.fakenews.model.TrendingWord;
 import se.bubbelbubbel.fakenews.service.TweetService;
 
@@ -55,6 +55,13 @@ public class TweetController {
 		return tweetService.getTrendingWords(monitorerUserName);
 	}
 
+	@RequestMapping(value="/word/{monitorerUserName}/{word}", method=RequestMethod.GET,
+			headers={"Accept=application/json"})
+	public List<MonitoredTweet> getTweetsByWord(@PathVariable("monitorerUserName") String monitorerUserName,
+									 			@PathVariable("word") String word) throws DatabaseErrorException {
+		logger.debug("getTweetsByWord for monitorerUserName: " + monitorerUserName +" and word: " + word);
+		return tweetService.getTweetsByWord(monitorerUserName, word);
+	}
 
 	@ExceptionHandler(IllegalTweetRequestException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
