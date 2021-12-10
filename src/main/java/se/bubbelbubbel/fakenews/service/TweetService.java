@@ -167,7 +167,7 @@ public class TweetService {
 	}
 
 	private void saveStatus(Status status, Monitorer monitorer) {
-		tweetDAO.saveStatus(status,  monitorer);
+		tweetDAO.saveStatus(status, monitorer);
 	}
 
 	private void cleanupOldStatuses() {

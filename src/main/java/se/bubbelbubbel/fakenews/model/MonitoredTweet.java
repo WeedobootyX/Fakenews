@@ -8,6 +8,14 @@ public class MonitoredTweet {
 	private String imageUrl = "";
 	private String text = "";
 	private LocalDateTime createdAt;
+	private long id;
+	
+	public long getId() {
+		return id;
+	}
+	public void setId(long id) {
+		this.id = id;
+	}
 	public String getUserName() {
 		return userName;
 	}

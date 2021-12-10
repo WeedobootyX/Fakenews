@@ -332,12 +332,13 @@ public class TweetDAO {
 	public List<MonitoredTweet> getTweetsByWord(String monitorerUserName, String word) {
 		logger.debug("getTweetsByWord");
 		String SELECT_TWEETS_BY_WORD =
-				"SELECT su.text, su.created_at, ma.user_name, ma.name, ma.image_url  " +
+				"SELECT su.text, su.created_at, ma.user_name, ma.name, ma.image_url, su.status_id " +
 				"FROM " + DATABASE_NAME + ".status_updates su, " +
 				DATABASE_NAME + ".monitored_accounts ma " +
 				"WHERE lower(su.monitorer) = ? " +
 				"AND lower(su.text) like ? " +
-				"AND ma.name = su.user_name "; // OBS! status updates har inte user_name
+				"AND ma.name = su.user_name " + // OBS! status updates har inte user_name
+				"ORDER BY su.created_at desc "; 
 			
 			List<MonitoredTweet> monitoredTweets = new ArrayList<MonitoredTweet>();
 			try { 
@@ -351,6 +352,7 @@ public class TweetDAO {
 					monitoredTweet.setUserName(rows.getString(3));
 					monitoredTweet.setName(rows.getString(4));
 					monitoredTweet.setImageUrl(rows.getString(5));
+					monitoredTweet.setId(rows.getLong(6));
 					monitoredTweets.add(monitoredTweet);
 				}
 			}
