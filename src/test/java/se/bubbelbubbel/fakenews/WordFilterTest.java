@@ -1,8 +1,9 @@
 package se.bubbelbubbel.fakenews;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import se.bubbelbubbel.fakenews.model.WordFilter;
 
@@ -11,8 +12,8 @@ public class WordFilterTest {
 	@Test
 	public void test() {
 		WordFilter filter = new WordFilter();
-		assertTrue("test 1 failed", filter.isFiltered("det"));
-		assertTrue("test 2 failed", filter.isFiltered("DET"));
-		assertFalse("test 3 failed", filter.isFiltered("tjottahejt"));
+		assertTrue(filter.isFiltered("det"));
+		assertTrue(filter.isFiltered("DET"));
+		assertFalse(filter.isFiltered("tjottahejt"));
 	}
 }
