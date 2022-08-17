@@ -374,7 +374,7 @@ public class NewsDAO {
 		logger.debug("locking manual newsflash: " + id);
 		String UPDATE_MANUAL_NEWSFLASH =
 			"UPDATE " + DATABASE_NAME + ".manual_newsflashes " +
-			"SET locked_until = ADD_DATE(NOW(), INTERVAL 90 DAY) " +
+			"SET locked_until = DATE_ADD(NOW(), INTERVAL 90 DAY) " +
 			"WHERE id = ? ";
 		
 		try {
