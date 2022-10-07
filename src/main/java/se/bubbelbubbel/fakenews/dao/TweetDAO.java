@@ -183,7 +183,9 @@ public class TweetDAO {
 			"DELETE FROM " + DATABASE_NAME + ".status_updates " +
 			"WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 DAY)";
 		try {
+			logger.debug("running SQL: " + DELETE_STATUSES);
 			jdbcTemplate.update(DELETE_STATUSES);
+			logger.debug("done");
 		}
 		catch (Exception e) {
 			String errorMsg = " Exception caught in statusCleanup - " + e.getClass() + " with message: " + e.getMessage();
@@ -290,7 +292,7 @@ public class TweetDAO {
 	public void addMonitoredAccount(String monitorer, String userName) {
 		logger.debug("Adding monitored account: " + userName + " for monitorer: " + monitorer);
 		String INSERT_MONITORED_ACCOUNT =
-			"INSERT INTO " + DATABASE_NAME + ".monitored_accounts (monitorer, user_name2) " + 
+			"INSERT INTO " + DATABASE_NAME + ".monitored_accounts (monitorer, user_name) " + 
 			"VALUES (?, ?) ";
 		try { 
 			jdbcTemplate.update(INSERT_MONITORED_ACCOUNT,

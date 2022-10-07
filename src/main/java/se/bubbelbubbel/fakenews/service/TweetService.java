@@ -1,7 +1,10 @@
-package se.bubbelbubbel.fakenews.service;
+package se.bubbelbubbel.fakenews.	service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -159,15 +162,38 @@ public class TweetService {
 			}
 			ResponseList<Status> statusList;
 			statusList = twitter.getUserTimeline(monitoredAccount.getUserId());
-			statusList.forEach(status -> saveStatus(status, monitorer));
+			statusList.stream()
+					  .filter(status -> filterByDate(status))
+					  .forEach(status -> saveStatus(status, monitorer));
 		} catch (TwitterException e) {
 			logger.error("Exception caught in processStatusUpdates: " + e.getClass() + " - " + e.getMessage());
 		} catch (DatabaseErrorException e) {
 		}
 	}
+	private boolean filterByDate(Status status ) {
+		LocalDateTime yesterday = LocalDateTime.now().minus(24, ChronoUnit.HOURS);
+		LocalDateTime statusTime = status.getCreatedAt().toInstant()
+														.atZone(ZoneId.systemDefault())
+														.toLocalDateTime();
+		if(statusTime.isBefore(yesterday)) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
 
 	private void saveStatus(Status status, Monitorer monitorer) {
+		logStatus(status);
 		tweetDAO.saveStatus(status, monitorer);
+	}
+
+	private void logStatus(Status status) {
+		logger.debug("Text: "  + status.getText());
+		logger.debug("DisplayTextRangeStart: "  + status.getDisplayTextRangeStart());
+		logger.debug("DisplayTextRangeEnd: "  + status.getDisplayTextRangeEnd());
+		logger.debug("Source: "  + status.getSource());
+		logger.debug("Truncated: "  + status.isTruncated());
 	}
 
 	private void cleanupOldStatuses() {
