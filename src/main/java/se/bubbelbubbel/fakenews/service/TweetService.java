@@ -31,13 +31,12 @@ import se.bubbelbubbel.fakenews.model.Tweet;
 import se.bubbelbubbel.fakenews.model.TweetRequest;
 import se.bubbelbubbel.fakenews.model.TweetScheduleEntry;
 import se.bubbelbubbel.fakenews.model.WordFilter;
-import twitter4j.ResponseList;
-import twitter4j.Status;
 import twitter4j.Twitter;
+import twitter4j.Twitter.TwitterBuilder;
 import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-import twitter4j.User;
-import twitter4j.auth.AccessToken;
+import twitter4j.v1.ResponseList;
+import twitter4j.v1.Status;
+import twitter4j.v1.User;
 
 @EnableScheduling
 @Component
@@ -107,13 +106,17 @@ public class TweetService {
 		String twitterAccessTokenSecret = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN_SECRET");
 		String twitterOauthConsumerKey = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_KEY");
 		String twitterOauthConsumerSecret = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_SECRET");
-		AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
-		Twitter twitter = new TwitterFactory().getInstance();
-		twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
-		twitter.setOAuthAccessToken(accessToken);
+//		AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
+		Twitter twitter = Twitter.newBuilder()
+				.prettyDebugEnabled(true)
+				.oAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret)
+				.oAuthAccessToken(twitterAccessToken, twitterAccessTokenSecret)
+				.build();
+//		twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
+//		twitter.setOAuthAccessToken(accessToken);
 		try {
-			Status status = twitter.updateStatus(text);
-		} 
+			Status status = twitter.v1().tweets().updateStatus(text);
+		} 	
 		catch (TwitterException e) {
 			logger.error("TwitterException caught: " + e.getMessage());
 		}
@@ -143,10 +146,14 @@ public class TweetService {
 			String twitterAccessTokenSecret = systemService.getSystemParameter(prefix + "_TWITTER_ACCESS_TOKEN_SECRET");
 			String twitterOauthConsumerKey = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_KEY");
 			String twitterOauthConsumerSecret = systemService.getSystemParameter(prefix + "_TWITTER_OAUTH_CONSUMER_SECRET");
-			AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
-			Twitter twitter = new TwitterFactory().getInstance();
-			twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
-			twitter.setOAuthAccessToken(accessToken);
+//			AccessToken accessToken = new AccessToken(twitterAccessToken, twitterAccessTokenSecret);
+			Twitter twitter = Twitter.newBuilder()
+					.prettyDebugEnabled(true)
+					.oAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret)
+					.oAuthAccessToken(twitterAccessToken, twitterAccessTokenSecret)
+					.build();
+//			twitter.setOAuthConsumer(twitterOauthConsumerKey, twitterOauthConsumerSecret);
+//			twitter.setOAuthAccessToken(accessToken);
 			monitoredAccounts.forEach(monitoredAccount -> processStatusUpdates(monitoredAccount, twitter, monitorer));
 		}
 		catch (Exception e) {
@@ -161,7 +168,7 @@ public class TweetService {
 				setupMonitoredAccount(monitoredAccount, twitter);
 			}
 			ResponseList<Status> statusList;
-			statusList = twitter.getUserTimeline(monitoredAccount.getUserId());
+			statusList = twitter.v1().timelines().getHomeTimeline();
 			statusList.stream()
 					  .filter(status -> filterByDate(status))
 					  .forEach(status -> saveStatus(status, monitorer));
@@ -172,9 +179,7 @@ public class TweetService {
 	}
 	private boolean filterByDate(Status status ) {
 		LocalDateTime yesterday = LocalDateTime.now().minus(24, ChronoUnit.HOURS);
-		LocalDateTime statusTime = status.getCreatedAt().toInstant()
-														.atZone(ZoneId.systemDefault())
-														.toLocalDateTime();
+		LocalDateTime statusTime = status.getCreatedAt();
 		if(statusTime.isBefore(yesterday)) {
 			return false;
 		}
@@ -208,7 +213,7 @@ public class TweetService {
 		logger.debug("setupMonitoredAccount for: " + monitoredAccount.getUserName());
 		User user;
 		try {
-			user = twitter.showUser(monitoredAccount.getUserName());
+			user = twitter.v1().users().showUser(monitoredAccount.getUserName());
 			monitoredAccount.setName(user.getName());
 			monitoredAccount.setUserId(user.getId());
 			monitoredAccount.setImageURL(user.get400x400ProfileImageURLHttps());

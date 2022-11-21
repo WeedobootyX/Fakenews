@@ -2,6 +2,7 @@ package se.bubbelbubbel.fakenews.dao;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -332,15 +333,21 @@ public class NewsDAO {
 
 	public void saveManualNewsflash(Newsflash newsflash) throws DatabaseErrorException {
 		logger.debug("saveManualNewsflash" );
+		Random r = new Random();
+		int delayDays = r.nextInt(20) + 80;
+		int delayHours = r.nextInt(24);
+		int interval = (delayDays * 24) + delayHours;
+		
 		String INSERT_MANUAL_NEWSFLASH = 
 				"INSERT INTO " + DATABASE_NAME + ".manual_newsflashes " +
 				"(send_time, news_text, locked_until) " +
-				"VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 90 DAY)) ";
+				"VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR)) ";
 
 		try {
 			jdbcTemplate.update(INSERT_MANUAL_NEWSFLASH,
 					new Object[] {newsflash.getSendTime().getTime(),
-								  newsflash.getNewsText()});
+								  newsflash.getNewsText(),
+								  interval});
 		}
 		catch (Exception e) {
 			String errorMsg = " Exception caught in saveManualNewsflash for news text: " + newsflash.getNewsText() + " - " + e.getClass() + " with message: " + e.getMessage();

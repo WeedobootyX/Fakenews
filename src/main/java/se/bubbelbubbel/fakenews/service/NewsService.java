@@ -26,11 +26,6 @@ import se.bubbelbubbel.fakenews.model.QueuedNewsflash;
 import se.bubbelbubbel.fakenews.model.Snippet;
 import se.bubbelbubbel.fakenews.model.SnippetList;
 import se.bubbelbubbel.fakenews.model.Structure;
-import twitter4j.Status;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-import twitter4j.auth.AccessToken;
 
 @EnableScheduling
 @Component

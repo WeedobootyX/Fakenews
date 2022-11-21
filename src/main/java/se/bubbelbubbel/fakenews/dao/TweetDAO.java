@@ -28,7 +28,7 @@ import se.bubbelbubbel.fakenews.rowmapper.MonitoredAccountRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.StatusUpdateRowMapper;
 import se.bubbelbubbel.fakenews.rowmapper.TweetRowMapper;
 import se.bubbelbubbel.fakenews.model.MonitoredTweet;
-import twitter4j.Status;
+import twitter4j.v1.Status;
 
 @Component
 public class TweetDAO {
@@ -164,7 +164,7 @@ public class TweetDAO {
 					new Object[] {monitorer.getUserName(),
 								  status.getUser().getName(),
 								  status.getText(),
-								  LocalDateTime.ofInstant(status.getCreatedAt().toInstant(), ZoneId.systemDefault()),
+								  status.getCreatedAt(),
 								  status.getId()}
 			);
 		}
