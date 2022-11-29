@@ -120,7 +120,7 @@ public class NewsService {
 	@Scheduled(fixedRate=60000)
 	public void publishNews() {
 		try {
-			logger.debug("publishNews");
+			logger.debug("publishNews. Ja, ny version");
 			if(getPendingNewsflashCount() == 0) {
 				logger.debug("no pending newsflashes. Creating new");
 				createNewNewsflash();
