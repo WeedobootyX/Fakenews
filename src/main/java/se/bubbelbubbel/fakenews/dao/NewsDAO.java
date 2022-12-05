@@ -229,7 +229,7 @@ public class NewsDAO {
 	public void setStructureCooldown(String structureKey) {
 		String SET_COOLDOWN =
 				"UPDATE " + DATABASE_NAME + ".structures " + 
-				"SET cooldown_counter = 3 " +
+				"SET cooldown_counter = 10 " +
 				"WHERE structure_key = ? ";
 		try {
 			jdbcTemplate.update(SET_COOLDOWN,
