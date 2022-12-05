@@ -116,7 +116,7 @@ public class NewsDAO {
 			throw new DatabaseErrorException(errorMsg);
 		}
 	}
-
+//x
 	public List<Newsflash> getUnpublishedNewsflashes() throws DatabaseErrorException {
 		String SELECT_UNPUBLISHED_NEWSFLASHES =
 				"SELECT " + NewsflashRowMapper.NEWSFLASH_COLUMN_LIST +
