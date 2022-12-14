@@ -7,5 +7,5 @@ RUN mkdir -p /var/fakenews/logs/archived
 RUN chmod 777 /var/fakenews/logs
 RUN chmod 777 /var/fakenews/logs/archived
 USER fakenews
-COPY target/fakenews-0.1.jar fakenews.jar
+COPY target/fakenews-1.0.jar fakenews.jar
 ENTRYPOINT ["java", "-jar", "/fakenews.jar"]
