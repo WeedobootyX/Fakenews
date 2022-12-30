@@ -28,7 +28,7 @@ import se.bubbelbubbel.fakenews.service.TweetService;
 @RestController
 public class TweetController {
 	Logger logger = LoggerFactory.getLogger(TweetController.class);
-
+/*test git*/
 	@Autowired TweetService tweetService;
 	
 	@RequestMapping(value="/tweet/add", method=RequestMethod.POST,
