@@ -128,7 +128,7 @@ public class TweetService {
 	@Scheduled(fixedRate=3600000)
 	public void monitorTweets() {
 //		logger.info("Tweet monitoring begins");
-		logger.info("Tweet monitoring disabled because of twitter restrictions");
+		//Tweet monitoring disabled because of twitter restrictions
 /*
 		List<Monitorer> monitorers = tweetDAO.getMonitorers();
 		cleanupOldStatuses();
